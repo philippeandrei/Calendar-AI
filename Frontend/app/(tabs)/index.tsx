@@ -14,12 +14,16 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   SafeAreaView,
+  Modal,
 } from 'react-native';
 import * as Calendar from 'expo-calendar';
 import * as Haptics from 'expo-haptics';
 import { ModernButton } from '@/components/ModernButton';
+import ColorPicker from '@/components/ColorPicker';
+import { useTheme } from '@/context/ThemeContext';
 
 const EventParserScreen = () => {
+  const { primaryColor, setPrimaryColor } = useTheme();
   const [input, setInput] = useState('');
   const [error, setError] = useState(null);
   const [calendarPermission, setCalendarPermission] = useState(false);
@@ -40,6 +44,18 @@ const EventParserScreen = () => {
   const MAX_SEARCH_RESULTS = 5;
   const scrollViewRef = useRef<ScrollView>(null);
   const searchInputRef = useRef<TextInput>(null);
+  const [showColorPicker, setShowColorPicker] = useState(false);
+
+  const colorOptions = [
+    '#007aff', // iOS Blue
+    '#34C759', // Green
+    '#FF9500', // Orange
+    '#FF2D55', // Pink
+    '#5856D6', // Purple
+    '#FF3B30', // Red
+    '#5AC8FA', // Light Blue
+    '#AF52DE', // Deep Purple
+  ];
 
   useEffect(() => {
     requestCalendarPermission();
@@ -244,19 +260,70 @@ const EventParserScreen = () => {
     </View>
   );
 
+  const getEventEmoji = (title) => {
+    const lowerTitle = title.toLowerCase();
+    if (lowerTitle.includes('meeting')) return '👥';
+    if (lowerTitle.includes('call')) return '📞';
+    if (lowerTitle.includes('lunch') || lowerTitle.includes('dinner') || lowerTitle.includes('breakfast')) return '🍽️';
+    if (lowerTitle.includes('doctor') || lowerTitle.includes('appointment')) return '👨‍⚕️';
+    if (lowerTitle.includes('birthday')) return '🎂';
+    if (lowerTitle.includes('party')) return '🎉';
+    if (lowerTitle.includes('workout') || lowerTitle.includes('gym')) return '💪';
+    if (lowerTitle.includes('shopping')) return '🛍️';
+    if (lowerTitle.includes('travel') || lowerTitle.includes('trip')) return '✈️';
+    if (lowerTitle.includes('movie') || lowerTitle.includes('cinema')) return '🎬';
+    if (lowerTitle.includes('study') || lowerTitle.includes('class')) return '📚';
+    if (lowerTitle.includes('interview')) return '💼';
+    if (lowerTitle.includes('wedding')) return '💍';
+    if (lowerTitle.includes('concert')) return '🎵';
+    if (lowerTitle.includes('game')) return '🎮';
+    return '📅'; // default emoji
+  };
+
+  const getDynamicStyles = () => StyleSheet.create({
+    nextEventTitle: {
+      fontSize: 18,
+      fontWeight: '600',
+      color: primaryColor,
+      marginBottom: 8,
+    },
+    buttonText: {
+      color: primaryColor,
+    },
+    inputBorder: {
+      borderColor: primaryColor,
+    },
+    sectionTitle: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 8,
+      color: primaryColor,
+    },
+    statNumber: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: primaryColor,
+    },
+  });
+
   const renderNextEvents = () => (
     <View style={styles.nextEventsSection}>
       <Text style={styles.sectionTitle}>⏰ Next Important Events</Text>
       {nextImportantEvents.map((event, index) => (
         <View key={event.id} style={styles.nextEventItem}>
-          <View style={styles.nextEventContent}>
-            <Text style={styles.nextEventTitle}>{event.title}</Text>
-            <Text style={styles.nextEventTime}>
-              {new Date(event.startDate).toLocaleString()} - {new Date(event.endDate).toLocaleString()}
-            </Text>
-            {event.location && (
-              <Text style={styles.nextEventLocation}>📍 {event.location}</Text>
-            )}
+          <View style={styles.eventHeader}>
+            <View style={styles.emojiContainer}>
+              <Text style={styles.eventEmoji}>{getEventEmoji(event.title)}</Text>
+            </View>
+            <View style={styles.nextEventContent}>
+              <Text style={getDynamicStyles().nextEventTitle}>{event.title}</Text>
+              <Text style={styles.nextEventTime}>
+                {new Date(event.startDate).toLocaleString()} - {new Date(event.endDate).toLocaleString()}
+              </Text>
+              {event.location && (
+                <Text style={styles.nextEventLocation}>📍 {event.location}</Text>
+              )}
+            </View>
           </View>
         </View>
       ))}
@@ -277,17 +344,21 @@ const EventParserScreen = () => {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>🗓️ Event Parser</Text>
-            <View style={styles.assistantBox}>
-              <Text style={styles.assistantText}>📅 Calendar App – Your Personal Calendar Assistant</Text>
+            <View style={styles.header}>
+              <Text style={[styles.title, { color: primaryColor }]}>🗓️ Event Parser</Text>
+              <TouchableOpacity 
+                style={[styles.colorButton, { backgroundColor: primaryColor }]}
+                onPress={() => setShowColorPicker(true)}
+              />
             </View>
 
             {renderNextEvents()}
 
             <View style={styles.inputSection}>
               <TextInput
-                style={[styles.input, isLoading && styles.inputLoading]}
+                style={[styles.input, getDynamicStyles().inputBorder]}
                 placeholder={isLoading ? `Processing your request${loadingDots}` : "What would you like to do? E.g., Add meeting at 2pm on Monday"}
+                placeholderTextColor="#666"
                 value={input}
                 onChangeText={setInput}
                 multiline
@@ -299,22 +370,25 @@ const EventParserScreen = () => {
                   onPress={clearInput}
                   variant="secondary"
                   disabled={isLoading}
+                  color={primaryColor}
                 />
                 <ModernButton
                   title={isLoading ? "Processing..." : "Submit"}
                   onPress={parseEvent}
                   variant="primary"
                   disabled={isLoading}
+                  color={primaryColor}
                 />
               </View>
             </View>
 
             <View style={styles.searchSection}>
-              <Text style={styles.label}>🔍 Search Events</Text>
+              <Text style={getDynamicStyles().sectionTitle}>🔍 Search Events</Text>
               <TextInput
                 ref={searchInputRef}
-                style={styles.searchInput}
+                style={[styles.searchInput, getDynamicStyles().inputBorder]}
                 placeholder="Type to search events..."
+                placeholderTextColor="#666"
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 onFocus={() => {
@@ -343,18 +417,18 @@ const EventParserScreen = () => {
             )}
 
             <View style={styles.statsSection}>
-              <Text style={styles.sectionTitle}>📊 Calendar Stats</Text>
+              <Text style={getDynamicStyles().sectionTitle}>📊 Calendar Stats</Text>
               <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
-                  <Text style={styles.statNumber}>{stats.scheduled}</Text>
+                  <Text style={getDynamicStyles().statNumber}>{stats.scheduled}</Text>
                   <Text style={styles.statLabel}>Events Scheduled</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <Text style={styles.statNumber}>{stats.upcoming}</Text>
+                  <Text style={getDynamicStyles().statNumber}>{stats.upcoming}</Text>
                   <Text style={styles.statLabel}>Upcoming Tasks</Text>
                 </View>
                 <View style={styles.statBox}>
-                  <Text style={styles.statNumber}>{stats.completed}</Text>
+                  <Text style={getDynamicStyles().statNumber}>{stats.completed}</Text>
                   <Text style={styles.statLabel}>Completed</Text>
                 </View>
               </View>
@@ -370,6 +444,28 @@ const EventParserScreen = () => {
                 <Text style={styles.retryText}>Please try again.</Text>
               </View>
             )}
+
+            <Modal
+              visible={showColorPicker}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setShowColorPicker(false)}
+            >
+              <TouchableWithoutFeedback onPress={() => setShowColorPicker(false)}>
+                <View style={styles.modalOverlay}>
+                  <View style={styles.colorPickerContainer}>
+                    <Text style={[styles.colorPickerTitle, { color: primaryColor }]}>Choose Theme Color</Text>
+                    <ColorPicker
+                      onColorSelected={color => {
+                        setPrimaryColor(color);
+                        setShowColorPicker(false);
+                      }}
+                      initialColor={primaryColor}
+                    />
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
@@ -388,24 +484,16 @@ const styles = StyleSheet.create({
   container: {
     padding: 16,
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 12,
-    textAlign: 'center',
-  },
-  assistantBox: {
-    backgroundColor: '#fff',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  assistantText: {
-    fontSize: 16,
     textAlign: 'center',
   },
   inputSection: {
@@ -418,16 +506,18 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
     minHeight: 60,
     marginBottom: 12,
+    color: '#000',
+    borderColor: '#ccc',
   },
   inputLoading: {
     backgroundColor: '#f8f9fa',
     borderColor: '#e9ecef',
+    color: '#000',
   },
   commandTypeContainer: {
     flexDirection: 'row',
@@ -471,11 +561,12 @@ const styles = StyleSheet.create({
   searchInput: {
     backgroundColor: '#f8f9fa',
     borderWidth: 1,
-    borderColor: '#e9ecef',
     borderRadius: 12,
     padding: 12,
     fontSize: 16,
     marginTop: 8,
+    color: '#000',
+    borderColor: '#ccc',
   },
   searchResultsText: {
     fontSize: 14,
@@ -547,10 +638,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     width: '30%',
-  },
-  statNumber: {
-    fontSize: 20,
-    fontWeight: 'bold',
   },
   statLabel: {
     fontSize: 14,
@@ -624,14 +711,24 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
   },
+  eventHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  emojiContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  eventEmoji: {
+    fontSize: 20,
+  },
   nextEventContent: {
     flex: 1,
-  },
-  nextEventTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#007aff',
-    marginBottom: 8,
   },
   nextEventTime: {
     fontSize: 14,
@@ -641,6 +738,41 @@ const styles = StyleSheet.create({
   nextEventLocation: {
     fontSize: 14,
     color: '#666',
+  },
+  colorButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  colorPickerContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+    width: '90%',
+    maxWidth: 400,
+    height: 400,
+  },
+  colorPickerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+    textAlign: 'center',
   },
 });
 
