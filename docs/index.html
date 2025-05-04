@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+ <html lang="en">
+ <head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Calendar Control App</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #000;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    header {
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .iphone-frame {
+      width: 320px;
+      height: 640px;
+      padding: 0;
+      border: 0px solid #111;
+      border-radius: 40px;
+      position: relative;
+      box-shadow: 0 10px 60px rgba(0, 0, 0, 0.8);
+      background: #000;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out; /* Smooth transition for zoom and shadow */
+    }
+
+    .iphone-frame:hover {
+      transform: scale(1.05); /* Subtle zoom on the frame */
+      box-shadow: 0 15px 70px rgba(0, 122, 255, 0.6); /* Highlight shadow on hover */
+    }
+
+    .iphone-frame::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50px;
+      height: 4px;
+      background: #333;
+      border-radius: 2px;
+    }
+
+    video {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: inherit;
+      object-fit: cover;
+      transform: scale(1); /* Reset video scale */
+      transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out; /* Smooth transition for zoom and opacity */
+    }
+
+    video:hover {
+      transform: scale(0.97); /* Subtle zoom OUT on video */
+      opacity: 0.9; /* Slightly less transparent */
+    }
+
+    h1, p, li, .section h2, footer p, .button, .social-icons a {
+      transition: color 0.2s ease-in-out, transform 0.2s ease-in-out; /* Smooth transition for color and zoom */
+    }
+
+    h1:hover, p:hover, li:hover, .section h2:hover, footer p:hover, .button:hover, .social-icons a:hover {
+      color: #00aaff; /* Blue hover effect for all text elements and buttons */
+      transform: scale(1.03); /* Subtle zoom on hover */
+    }
+
+    .section {
+      padding: 60px 20px;
+      text-align: center;
+      background: #121212;
+    }
+
+    .section h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+      font-weight: 600;
+      color: #f5f5f7;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 auto;
+      max-width: 600px;
+      text-align: left;
+    }
+
+    ul li::before {
+      content: '✓';
+      margin-right: 10px;
+      color: #007aff;
+    }
+
+    .button {
+      display: inline-block;
+      margin-top: 30px;
+      padding: 14px 24px;
+      background: #007aff;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: bold;
+    }
+
+    .button:hover {
+      background: #0056cc;
+      transform: translateY(-2px) scale(1.03); /* Keep the translateY and add scale */
+      color: #00aaff; /* Blue hover effect */
+    }
+
+    footer {
+      background: #1c1c1e;
+      color: #8e8e93;
+      text-align: center;
+      padding: 30px 10px;
+      font-size: 0.9rem;
+    }
+
+    .social-icons {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .social-icons a {
+      color: #8e8e93;
+      font-size: 2.5rem;
+      text-decoration: none;
+      opacity: 0.7;
+    }
+
+    .social-icons a:hover {
+      color: #00aaff; /* Blue hover effect */
+      transform: scale(1.25); /* Slightly more zoom for icons */
+      opacity: 1;
+    }
+
+    /* Fade In/Out Section */
+    .fade-in-section {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 1s ease-out, transform 1s ease-out;
+    }
+
+    .fade-in-section.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-in-section.visible ul li {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-in-section.visible ul li:nth-child(1) {
+      transition-delay: 0.2s;
+    }
+    .fade-in-section.visible ul li:nth-child(2) {
+      transition-delay: 0.4s;
+    }
+    .fade-in-section.visible ul li:nth-child(3) {
+      transition-delay: 0.6s;
+    }
+    .fade-in-section.visible ul li:nth-child(4) {
+      transition-delay: 0.8s;
+    }
+    .fade-in-section.visible ul li:nth-child(5) {
+      transition-delay: 1s;
+    }
+
+    /* Keyframe Animations */
+    @keyframes slideDownFadeIn {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes slideUpFadeIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes framePulse { /* Animation for the frame */
+      0% { transform: scale(1); }
+      100% { transform: scale(1.03); } /* Slightly less scaling for the frame */
+    }
+
+    @media (max-width: 400px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .iphone-frame {
+        width: 90%;
+        height: auto;
+        aspect-ratio: 9 / 16;
+      }
+
+      .social-icons {
+        gap: 15px;
+      }
+
+      .social-icons a {
+        font-size: 2rem;
+      }
+    }
+  </style>
+ </head>
+ <body>
+
+  <header>
+    <div class="iphone-frame">
+      <video id="video" autoplay loop muted playsinline>
+        <source src="iPhone.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+    <h1>📅 Calendar Control App</h1>
+    <p>An AI-powered mobile app that intelligently manages your Google Calendar using natural language input!</p>
+  </header>
+
+  <section class="section fade-in-section">
+    <h2>🚀 Key Features</h2>
+    <ul>
+      <li>⌨️ Input calendar events using natural language</li>
+      <li>🤖 Understands your intent with Gemini AI</li>
+      <li>📆 Seamlessly adds events to your Google Calendar</li>
+      <li>🔗 Real-time calendar synchronization via Expo-Calendar</li>
+      <li>📱 Intuitive React Native mobile interface</li>
+    </ul>
+  </section>
+
+  <section class="section fade-in-section">
+    <h2>🛠️ Under the Hood</h2>
+    <ul>
+      <li>⚙️ Flask backend (Python-powered)</li>
+      <li>📱 Cross-platform with React Native & Expo</li>
+      <li>🧠 Natural language processing with Gemini AI (API)</li>
+      <li>🗓 Calendar integration with Expo-Calendar</li>
+    </ul>
+  </section>
+
+  <section class="section fade-in-section">
+    <h2>📦 Get Started</h2>
+    <p>Installation details and open-source release information coming soon.</p>
+    <a href="https://github.com/philippeandrei/Calendar-AI" class="button" target="_blank">View on GitHub</a>
+  </section>
+
+  <footer>
+    <div class="social-icons">
+      <a href="https://github.com/philippeandrei" target="_blank" aria-label="GitHub"><i class="fab fa-github"></i></a>
+      <a href="https://www.instagram.com/philippecolta" target="_blank" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+    </div>
+    <p>&copy; 2025 Calendar Control App — Developed by Colta Andrei</p>
+  </footer>
+
+  <script>
+    // Intersection Observer for Fade In/Out Effect
+    const fadeInSections = document.querySelectorAll('.fade-in-section');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        } else {
+          entry.target.classList.remove('visible');
+        }
+      });
+    }, {
+      threshold: 0.2
+    });
+
+    fadeInSections.forEach(section => {
+      observer.observe(section);
+    });
+  </script>
+ </body>
+ </html>
